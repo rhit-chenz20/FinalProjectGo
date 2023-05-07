@@ -19,7 +19,6 @@ func gcd(a int, b int) int {
 	gcd:=0
 	for gcd=i;gcd>1;gcd--{
 		if a%gcd == 0 && b%gcd == 0{
-			fmt.Println("GCD Between ", a," and ", b," is", gcd)
 			return gcd
 		}
 	}
@@ -63,7 +62,7 @@ func main() {
 		a = rand.Intn(1000000)
 		b = rand.Intn(1000000)
 		result:= gcd(a, b)
-		fmt.Println("GCD Between ", a," and ", b," is ,result)
+		fmt.Println("GCD Between ", a," and ", b," is ",result)
 	}
 	t := time.Now()
 	duration := t.Sub(start)
