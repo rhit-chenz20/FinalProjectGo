@@ -37,6 +37,9 @@ func gcd(a int, b int) int {
 
 // This should be done in a way that the amount of workers can change without
 // anything else needing modification.
+// The format of how the data is printed to the console should also stay the same.
+
+// Hint: The channels may be sending more complex messages than just a number
 
 // As expected, once the workers are correctly implemented, 
 // there should be a significant time saving.
