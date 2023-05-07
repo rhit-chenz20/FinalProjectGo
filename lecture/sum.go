@@ -11,6 +11,7 @@ func sum(c chan int, co chan int) {
 	}
 }
 
+// go run sum
 func main() {
 	c := make(chan int, 6)
 	co := make(chan int, 3)
