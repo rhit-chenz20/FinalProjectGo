@@ -9,20 +9,20 @@ import (
 // Method that calculates the GCD between two numbers.
 // This will need modification during the exercise
 func gcd(a int, b int) int {
-	fmt.Println("Calculating GCD Between ", a," and ", b)
-	i:=0
-	if a>b {
+	fmt.Println("Calculating GCD Between ", a, " and ", b)
+	i := 0
+	if a > b {
 		i = a
-	}else{
-		i=b
+	} else {
+		i = b
 	}
-	gcd:=0
-	for gcd=i;gcd>1;gcd--{
-		if a%gcd == 0 && b%gcd == 0{
+	gcd := 0
+	for gcd = i; gcd > 1; gcd-- {
+		if a%gcd == 0 && b%gcd == 0 {
 			return gcd
 		}
 	}
-	
+
 	return 1
 }
 
@@ -40,29 +40,31 @@ func gcd(a int, b int) int {
 
 // Hint: You will want the channels to input and output information from this struct:
 type gcdmsg struct {
-	a	int
-	b	int
-	out	int
+	a   int
+	b   int
+	out int
 }
+
 //Example of a struct declaration: msg := gcdmsg{1,1,0}
 
-
-// As expected, once the workers are correctly implemented, 
+// As expected, once the workers are correctly implemented,
 // there should be a significant time saving.
 
 // For reference, in testing with 250 pairs of numbers,
 // the original solution ran in approximately 1.3 seconds on average
 // While our parallelized solution with 3 workers ran in 297.23 milliseconds on average
 
+// To run this file, type   go run GCDtest.go
+
 func main() {
-	a:= 1
-	b:= 1
+	a := 1
+	b := 1
 	start := time.Now()
-	for k:=0; k<250;k++{
+	for k := 0; k < 250; k++ {
 		a = rand.Intn(1000000)
 		b = rand.Intn(1000000)
-		result:= gcd(a, b)
-		fmt.Println("GCD Between ", a," and ", b," is ",result)
+		result := gcd(a, b)
+		fmt.Println("GCD Between ", a, " and ", b, " is ", result)
 	}
 	t := time.Now()
 	duration := t.Sub(start)
