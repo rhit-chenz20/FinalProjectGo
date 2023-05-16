@@ -28,3 +28,5 @@ INFO: Successfully applied 4 migrations to schema "PUBLIC", now at version v4 (e
 2023.05.15 21:10:16 INFO  time: initialize in 0.8s
 2023.05.15 21:10:18 WARN  Build server is not auto-connectable.
 2023.05.15 21:10:18 WARN  no build tool detected in workspace '/Users/andrea/Desktop/CSSE352/UI Playground/FinalProjectGo'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2023.05.15 22:29:39 INFO  Shutting down server
+2023.05.15 22:29:39 INFO  shutting down Metals

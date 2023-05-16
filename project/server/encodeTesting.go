@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -41,40 +42,24 @@ var id_counter = 4
 
 func encryptData() {
 	for i := 0; i < len(courses); i++ {
-		encodeCourse(courses[i])
+		encryptCourse(courses[i])
 
 	}
 	for i := 0; i < len(students); i++ {
-		encodeStudent(students[i])
+		encryptStudent(students[i])
 	}
 
 }
-func encodeCourse(course string) {
-
-	// block, err := newCipherBlock(0)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// ciphertext := make([]byte, aes.BlockSize+len(course))
-	// iv := ciphertext[:aes.BlockSize]
-	// if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-	// 	return "", err
-	// }
-
-	// stream := cipher.NewCFBEncrypter(block, iv)
-	// stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
-
-	// return fmt.Sprintf("%x", ciphertext), nil
-
-	// converted := []byte(course)
-
-	// dst := hex.EncodeToString(converted)
-	// coursesEncrypted = append(coursesEncrypted, dst)
-	// decoded, _ := hex.DecodeString(dst)
-	// // fmt.Printf("%s\n", decoded)
+func encryptCourse(course string) {
+	converted := []byte(course)
+	dst := make([]byte, hex.EncodedLen(len(converted)))
+	hex.Encode(dst, converted)
+	coursesEncrypted = append(coursesEncrypted, string(dst))
+	decoded, _ := hex.DecodeString((dst))
+	fmt.Println("testing")
+	fmt.Println("%s\n", decoded)
 }
-func encodeStudent(stu student) {
+func encryptStudent(stu student) {
 	convertedS := []byte(stu.ID)
 	convertedN := []byte(stu.Name)
 	convertedY := []byte(stu.Year)
@@ -145,8 +130,8 @@ func postGradeToStudentbyID(c *gin.Context) {
 	}
 	for _, s := range students {
 		if s.ID == student_to_add.ID {
-			if len(s.Courses) == 0 {
-				s.Courses = make(map[string]float64, len(student_to_add.Courses))
+			if s.Courses == nil {
+				s.Courses = make(map[string]float64)
 			}
 			for course, grade := range student_to_add.Courses {
 				s.Courses[course] = grade
