@@ -118,6 +118,9 @@ func postStudents(c *gin.Context) {
 		return
 	}
 	newStudent.ID = strconv.Itoa(id_counter)
+	if newStudent.Courses == nil {
+		newStudent.Courses = make(map[string]float64)
+	}
 	id_counter += 1
 	// Add the new student to the slice.
 	students = append(students, newStudent)
