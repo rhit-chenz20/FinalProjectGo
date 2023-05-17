@@ -1,14 +1,16 @@
 package main
 
 import (
-	"encoding/hex"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 )
 
 // /key, _ := hex.DecodeString("6368616e676520746869732070617373776f726420746f206120736563726574")
+
+var m sync.Mutex
 
 type student struct {
 	ID      string
@@ -39,63 +41,66 @@ var studentsEncrypted = []student{}
 
 var id_counter = 4
 
-func encryptData() {
-	for i := 0; i < len(courses); i++ {
-		encodeCourse(courses[i])
+// func encryptData() {
+// 	for i := 0; i < len(courses); i++ {
+// 		encodeCourse(courses[i])
 
-	}
-	for i := 0; i < len(students); i++ {
-		encodeStudent(students[i])
-	}
+// 	}
+// 	for i := 0; i < len(students); i++ {
+// 		encodeStudent(students[i])
+// 	}
 
-}
-func encodeCourse(course string) {
+// }
+// func encodeCourse(course string) {
 
-	// block, err := newCipherBlock(0)
-	// if err != nil {
-	// 	return "", err
-	// }
+// 	block, err := newCipherBlock(0)
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	// ciphertext := make([]byte, aes.BlockSize+len(course))
-	// iv := ciphertext[:aes.BlockSize]
-	// if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-	// 	return "", err
-	// }
+// 	ciphertext := make([]byte, aes.BlockSize+len(course))
+// 	iv := ciphertext[:aes.BlockSize]
+// 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+// 		return "", err
+// 	}
 
-	// stream := cipher.NewCFBEncrypter(block, iv)
-	// stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
+// 	stream := cipher.NewCFBEncrypter(block, iv)
+// 	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
 
-	// return fmt.Sprintf("%x", ciphertext), nil
+// 	return fmt.Sprintf("%x", ciphertext), nil
 
-	// converted := []byte(course)
+// 	converted := []byte(course)
 
-	// dst := hex.EncodeToString(converted)
-	// coursesEncrypted = append(coursesEncrypted, dst)
-	// decoded, _ := hex.DecodeString(dst)
-	// // fmt.Printf("%s\n", decoded)
-}
-func encodeStudent(stu student) {
-	convertedS := []byte(stu.ID)
-	convertedN := []byte(stu.Name)
-	convertedY := []byte(stu.Year)
-	dstS := make([]byte, hex.EncodedLen(len(convertedS)))
-	dstN := make([]byte, hex.EncodedLen(len(convertedN)))
-	dstY := make([]byte, hex.EncodedLen(len(convertedY)))
-	hex.Encode(dstS, convertedS)
-	hex.Encode(dstN, convertedN)
-	hex.Encode(dstY, convertedY)
-	studentsEncrypted = append(studentsEncrypted, student{ID: string(dstS), Name: string(dstN), Year: string(dstY)})
-}
+// 	dst := hex.EncodeToString(converted)
+// 	coursesEncrypted = append(coursesEncrypted, dst)
+// 	decoded, _ := hex.DecodeString(dst)
+// 	// fmt.Printf("%s\n", decoded)
+// }
+// func encodeStudent(stu student) {
+// 	convertedS := []byte(stu.ID)
+// 	convertedN := []byte(stu.Name)
+// 	convertedY := []byte(stu.Year)
+// 	dstS := make([]byte, hex.EncodedLen(len(convertedS)))
+// 	dstN := make([]byte, hex.EncodedLen(len(convertedN)))
+// 	dstY := make([]byte, hex.EncodedLen(len(convertedY)))
+// 	hex.Encode(dstS, convertedS)
+// 	hex.Encode(dstN, convertedN)
+// 	hex.Encode(dstY, convertedY)
+// 	studentsEncrypted = append(studentsEncrypted, student{ID: string(dstS), Name: string(dstN), Year: string(dstY)})
+// }
 
 // func decryptStudent() string {
 
 // }
 
 func getCourses(c *gin.Context) {
+	m.Lock()
 	c.IndentedJSON(http.StatusOK, courses)
+	m.Unlock()
 }
 
 func postCourses(c *gin.Context) {
+	m.Lock()
 	var newCourse string
 	err := c.BindJSON(&newCourse)
 	if err != nil {
@@ -103,13 +108,17 @@ func postCourses(c *gin.Context) {
 	}
 	courses = append(courses, newCourse)
 	c.IndentedJSON(http.StatusCreated, newCourse)
+	m.Unlock()
 }
 
 func getStudents(c *gin.Context) {
+	m.Lock()
 	c.IndentedJSON(http.StatusOK, students)
+	m.Unlock()
 }
 
 func postStudents(c *gin.Context) {
+	m.Lock()
 	var newStudent student
 
 	// Call BindJSON to bind the received JSON to
@@ -125,9 +134,11 @@ func postStudents(c *gin.Context) {
 	// Add the new student to the slice.
 	students = append(students, newStudent)
 	c.IndentedJSON(http.StatusCreated, newStudent)
+	m.Unlock()
 }
 
 func getStudentByID(c *gin.Context) {
+	m.Lock()
 	id := c.Param("id")
 
 	for _, s := range students {
@@ -137,10 +148,12 @@ func getStudentByID(c *gin.Context) {
 		}
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
+	m.Unlock()
 }
 
 // Overwrite a Student's grade in a specified course
 func postGradeToStudentbyID(c *gin.Context) {
+	m.Lock()
 	var student_to_add student
 	if err := c.BindJSON(&student_to_add); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "cannot convert to JSON"})
@@ -149,18 +162,23 @@ func postGradeToStudentbyID(c *gin.Context) {
 	for _, s := range students {
 		if s.ID == student_to_add.ID {
 			for course, grade := range student_to_add.Courses {
-				s.Courses[course] = grade
-				// fmt.Print(s.Courses[course])
+				for _, c := range courses {
+					if c == course {
+						s.Courses[course] = grade
+					}
+				}
 			}
-			c.IndentedJSON(http.StatusOK, students)
+			c.IndentedJSON(http.StatusOK, s)
 			return
 		}
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
+	m.Unlock()
 }
 
 // Get a Student's grade in a specified course
 func getStudentsGradeById(c *gin.Context) {
+	m.Lock()
 	id := c.Param("id")
 	course := c.Param("course")
 
@@ -169,15 +187,18 @@ func getStudentsGradeById(c *gin.Context) {
 			for name, grade := range s.Courses {
 				if name == course {
 					c.IndentedJSON(http.StatusOK, grade)
+					return
 				}
 			}
 		}
 	}
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student/course not found"})
+	m.Unlock()
 }
 
 func main() {
 	router := gin.Default()
-	encryptData()
+	// encryptData()
 	router.GET("/students", getStudents)
 	router.POST("/students", postStudents)
 
@@ -189,7 +210,5 @@ func main() {
 	router.POST("/student", postGradeToStudentbyID)
 	router.GET("/student/:id/course/:course", getStudentsGradeById)
 
-	go router.Run("localhost:8080")
-	go router.Run("localhost:8081")
-	router.Run("localhost:8082")
+	router.Run("localhost:8080")
 }
