@@ -22,9 +22,9 @@ type student struct {
 var id_counter = 4
 
 var students = []student{
-	{ID: "1", Name: "John Doe", Year: "Junior"},
-	{ID: "2", Name: "Jane Doe", Year: "Sophomore"},
-	{ID: "3", Name: "Dave Smith", Year: "Senior"},
+	{ID: "1", Name: "John Doe", Year: "Junior", Courses: make(map[string]float64)},
+	{ID: "2", Name: "Jane Doe", Year: "Sophomore", Courses: make(map[string]float64)},
+	{ID: "3", Name: "Dave Smith", Year: "Senior", Courses: make(map[string]float64)},
 }
 
 // starter data for courses
@@ -135,6 +135,7 @@ func addStudent(request RequestBody) {
 		return
 	}
 
+	newStudent.Courses = make(map[string]float64)
 	newStudent.ID = strconv.Itoa(id_counter)
 	id_counter++
 
@@ -170,27 +171,13 @@ func setStudentGradeByID(request RequestBody) {
 		return
 	}
 
-	var course_to_set string
-	err = c.BindJSON(&course_to_set)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "cannot convert course to JSON"})
-		return
-	}
-
-	var grade_for_course float64
-	err = c.BindJSON(&grade_for_course)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "cannot convert grade to JSON"})
-		return
-	}
-
 	for _, s := range students {
 		if s.ID == student_to_modify.ID {
-			if len(s.Courses) == 0 {
-				s.Courses = make(map[string]float64)
+			for course, grade := range student_to_modify.Courses {
+				s.Courses[course] = grade
 			}
-			s.Courses[course_to_set] = grade_for_course
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "given course not found"})
+			c.IndentedJSON(http.StatusOK, students)
+			return
 		}
 	}
 	c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "student with given ID not found"})
