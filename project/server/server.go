@@ -26,9 +26,9 @@ var courses = []string{
 
 // starter data for students
 var students = []student{
-	{ID: "1", Name: "John Doe", Year: "Junior"},
-	{ID: "2", Name: "Jane Doe", Year: "Sophomore"},
-	{ID: "3", Name: "Dave Smith", Year: "Senior"},
+	{ID: "1", Name: "John Doe", Year: "Junior", Courses: make(map[string]float64)},
+	{ID: "2", Name: "Jane Doe", Year: "Sophomore", Courses: make(map[string]float64)},
+	{ID: "3", Name: "Dave Smith", Year: "Senior", Courses: make(map[string]float64)},
 }
 
 // Encrypted courses
@@ -145,13 +145,11 @@ func postGradeToStudentbyID(c *gin.Context) {
 	}
 	for _, s := range students {
 		if s.ID == student_to_add.ID {
-			if len(s.Courses) == 0 {
-				s.Courses = make(map[string]float64, len(student_to_add.Courses))
-			}
 			for course, grade := range student_to_add.Courses {
 				s.Courses[course] = grade
+				// fmt.Print(s.Courses[course])
 			}
-			c.IndentedJSON(http.StatusOK, s)
+			c.IndentedJSON(http.StatusOK, students)
 			return
 		}
 	}
