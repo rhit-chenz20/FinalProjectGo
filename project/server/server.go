@@ -168,7 +168,7 @@ func postGradeToStudentbyID(c *gin.Context) {
 					}
 				}
 			}
-			c.IndentedJSON(http.StatusOK, s)
+			c.IndentedJSON(http.StatusCreated, s)
 			return
 		}
 	}
