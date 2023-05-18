@@ -4,8 +4,8 @@
 #include <pthread.h>
 #include <time.h>
 
-#define TEST_LEN 1000
-#define NUM_WORKERS 10
+#define TEST_LEN 100000
+#define NUM_WORKERS 2000
 int input[2];
 int output[2];
 struct gcdmsg {
@@ -68,7 +68,7 @@ int main(){
      for (int k = 0;k<TEST_LEN;k++ ){
          gcdchannel[k].a = rand() % 1000000;
          gcdchannel[k].b = rand() % 1000000;
-         printf("Sending %d and %d\n", gcdchannel[k].a, gcdchannel[k].b);
+        // printf("Sending %d and %d\n", gcdchannel[k].a, gcdchannel[k].b);
          write(input[1], &gcdchannel[k],sizeof(struct gcdmsg));
      }
 

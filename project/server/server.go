@@ -4,7 +4,14 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
+	//"errors"
+	"fmt"
+	"io"
 	"github.com/gin-gonic/gin"
 )
 
@@ -55,7 +62,12 @@ func DecryptString(cipherHex string) string {
 	stream.XORKeyStream(ciphertext, ciphertext)
 	return string(ciphertext)
 }
-
+func newCipherBlock(key string) (cipher.Block, error) {
+	hasher := md5.New()
+	fmt.Fprint(hasher, key)
+	cipherKey := hasher.Sum(nil)
+	return aes.NewCipher(cipherKey)
+}
 type student struct {
 	ID      string
 	Name    string
@@ -80,21 +92,28 @@ var students = []student{
 // Encrypted courses
 var coursesEncrypted = []string{}
 
-// Encryted
+// Encryted students
 var studentsEncrypted = []student{}
 
 var id_counter = 4
 
-// func encryptData() {
-// 	for i := 0; i < len(courses); i++ {
-// 		encodeCourse(courses[i])
+ func encryptData() {
+ 	for i := 0; i < len(courses); i++ { 		
+		coursesEncrypted= append(coursesEncrypted,EncryptString(courses[i])) 
 
-// 	}
-// 	for i := 0; i < len(students); i++ {
-// 		encodeStudent(students[i])
-// 	}
+ 	}
+ 	for i := 0; i < len(students); i++ {
+		id:=EncryptString(students[i].ID)
+		name:=EncryptString(students[i].Name)
+		year:=EncryptString(students[i].Year)
+		courses:=students[i].Courses
+		
+		
+		var student = student{ID: id, Name: name, Year: year, Courses: courses}
+		studentsEncrypted = append(studentsEncrypted, student)
+ 	}
 
-// }
+ }
 // func encodeCourse(course string) {
 
 // 	block, err := newCipherBlock(0)
@@ -139,7 +158,11 @@ var id_counter = 4
 
 func getCourses(c *gin.Context) {
 	m.Lock()
-	c.IndentedJSON(http.StatusOK, courses)
+	tempcourses:= []string{}
+	for i := 0; i < len(coursesEncrypted); i++ { 		
+		tempcourses= append(tempcourses,DecryptString(courses[i])) 
+ 	}
+	c.IndentedJSON(http.StatusOK, tempcourses)
 	m.Unlock()
 }
 
@@ -150,14 +173,26 @@ func postCourses(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	courses = append(courses, newCourse)
-	c.IndentedJSON(http.StatusCreated, newCourse)
+	coursesEncrypted = append(courses, EncryptString(newCourse))
+	c.IndentedJSON(http.StatusCreated,  EncryptString(newCourse))
 	m.Unlock()
 }
 
 func getStudents(c *gin.Context) {
 	m.Lock()
-	c.IndentedJSON(http.StatusOK, students)
+	tempstudent:= []string{}
+	for i := 0; i < len(studentsEncrypted); i++ {
+		id:=EncryptString(studentsEncrypted[i].ID)
+		name:=EncryptString(studentsEncrypted[i].Name)
+		year:=EncryptString(studentsEncrypted[i].Year)
+		courses:=stustudentsEncrypteddents[i].Courses
+		
+		
+		var student = student{ID: id, Name: name, Year: year, Courses: courses}
+		tempstudent = append(studentsEncrypted, student)
+ 	}	
+
+	c.IndentedJSON(http.StatusOK, tempstudent)
 	m.Unlock()
 }
 
@@ -193,6 +228,18 @@ func getStudentByID(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
 	m.Unlock()
+
+	// m.Lock()
+	// id := c.Param("id")
+
+	// for _, s := range students {
+	// 	if s.ID == id {
+	// 		c.IndentedJSON(http.StatusOK, s)
+	// 		return
+	// 	}
+	// }
+	// c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
+	// m.Unlock()
 }
 
 // Overwrite a Student's grade in a specified course
@@ -242,7 +289,7 @@ func getStudentsGradeById(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
-	// encryptData()
+	encryptData()
 	router.GET("/students", getStudents)
 	router.POST("/students", postStudents)
 

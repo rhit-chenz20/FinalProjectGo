@@ -36,8 +36,8 @@ func gcd(cin chan gcdmsg, cout chan gcdmsg) {
 	}
 }
 
-const TEST_LEN = 1000
-const NUM_WORKERS = 10
+const TEST_LEN = 100000
+const NUM_WORKERS = 2000
 
 func main() {
 	msg := gcdmsg{1,1,0}
