@@ -12,6 +12,50 @@ import (
 
 var m sync.Mutex
 
+
+func EncryptString(plaintext string) string {
+	block, err := newCipherBlock("0")
+	if err != nil {
+		return ""
+	}
+
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return ""
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
+
+	return fmt.Sprintf("%x", ciphertext)
+}
+
+
+func DecryptString(cipherHex string) string {
+	block, err := newCipherBlock("0")
+	if err != nil {
+		return ""
+	}
+
+	ciphertext, err := hex.DecodeString(cipherHex)
+	if err != nil {
+		return ""
+	}
+
+	if len(ciphertext) < aes.BlockSize {
+		return ""
+	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+
+	// XORKeyStream can work in-place if the two arguments are the same.
+	stream.XORKeyStream(ciphertext, ciphertext)
+	return string(ciphertext)
+}
+
 type student struct {
 	ID      string
 	Name    string
