@@ -10,9 +10,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	//"errors"
-	"fmt"
+	//"fmt"
 	"io"
 	"github.com/gin-gonic/gin"
+	"bufio"
+    "fmt"
+    "os"
 )
 
 // /key, _ := hex.DecodeString("6368616e676520746869732070617373776f726420746f206120736563726574")
@@ -114,53 +117,12 @@ var id_counter = 4
  	}
 
  }
-// func encodeCourse(course string) {
-
-// 	block, err := newCipherBlock(0)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	ciphertext := make([]byte, aes.BlockSize+len(course))
-// 	iv := ciphertext[:aes.BlockSize]
-// 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-// 		return "", err
-// 	}
-
-// 	stream := cipher.NewCFBEncrypter(block, iv)
-// 	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
-
-// 	return fmt.Sprintf("%x", ciphertext), nil
-
-// 	converted := []byte(course)
-
-// 	dst := hex.EncodeToString(converted)
-// 	coursesEncrypted = append(coursesEncrypted, dst)
-// 	decoded, _ := hex.DecodeString(dst)
-// 	// fmt.Printf("%s\n", decoded)
-// }
-// func encodeStudent(stu student) {
-// 	convertedS := []byte(stu.ID)
-// 	convertedN := []byte(stu.Name)
-// 	convertedY := []byte(stu.Year)
-// 	dstS := make([]byte, hex.EncodedLen(len(convertedS)))
-// 	dstN := make([]byte, hex.EncodedLen(len(convertedN)))
-// 	dstY := make([]byte, hex.EncodedLen(len(convertedY)))
-// 	hex.Encode(dstS, convertedS)
-// 	hex.Encode(dstN, convertedN)
-// 	hex.Encode(dstY, convertedY)
-// 	studentsEncrypted = append(studentsEncrypted, student{ID: string(dstS), Name: string(dstN), Year: string(dstY)})
-// }
-
-// func decryptStudent() string {
-
-// }
 
 func getCourses(c *gin.Context) {
 	m.Lock()
 	tempcourses:= []string{}
 	for i := 0; i < len(coursesEncrypted); i++ { 		
-		tempcourses= append(tempcourses,DecryptString(courses[i])) 
+		tempcourses= append(tempcourses,DecryptString(coursesEncrypted[i])) 
  	}
 	c.IndentedJSON(http.StatusOK, tempcourses)
 	m.Unlock()
@@ -173,23 +135,23 @@ func postCourses(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	coursesEncrypted = append(courses, EncryptString(newCourse))
-	c.IndentedJSON(http.StatusCreated,  EncryptString(newCourse))
+	coursesEncrypted = append(coursesEncrypted, EncryptString(newCourse))
+	c.IndentedJSON(http.StatusCreated,  newCourse)
 	m.Unlock()
 }
 
 func getStudents(c *gin.Context) {
 	m.Lock()
-	tempstudent:= []string{}
+	tempstudent:= []student{}
 	for i := 0; i < len(studentsEncrypted); i++ {
-		id:=EncryptString(studentsEncrypted[i].ID)
-		name:=EncryptString(studentsEncrypted[i].Name)
-		year:=EncryptString(studentsEncrypted[i].Year)
-		courses:=stustudentsEncrypteddents[i].Courses
+		id:=DecryptString(studentsEncrypted[i].ID)
+		name:=DecryptString(studentsEncrypted[i].Name)
+		year:=DecryptString(studentsEncrypted[i].Year)
+		courses:=studentsEncrypted[i].Courses
 		
 		
 		var student = student{ID: id, Name: name, Year: year, Courses: courses}
-		tempstudent = append(studentsEncrypted, student)
+		tempstudent = append(tempstudent, student)
  	}	
 
 	c.IndentedJSON(http.StatusOK, tempstudent)
@@ -205,22 +167,22 @@ func postStudents(c *gin.Context) {
 	if err := c.BindJSON(&newStudent); err != nil {
 		return
 	}
-	newStudent.ID = strconv.Itoa(id_counter)
+	newStudent.ID = EncryptString(strconv.Itoa(id_counter))
 	if newStudent.Courses == nil {
 		newStudent.Courses = make(map[string]float64)
 	}
 	id_counter += 1
 	// Add the new student to the slice.
-	students = append(students, newStudent)
+	studentsEncrypted = append(studentsEncrypted, newStudent)
 	c.IndentedJSON(http.StatusCreated, newStudent)
 	m.Unlock()
 }
 
 func getStudentByID(c *gin.Context) {
 	m.Lock()
-	id := c.Param("id")
+	id := EncryptString(c.Param("id"))
 
-	for _, s := range students {
+	for _, s := range studentsEncrypted {
 		if s.ID == id {
 			c.IndentedJSON(http.StatusOK, s)
 			return
@@ -229,17 +191,7 @@ func getStudentByID(c *gin.Context) {
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
 	m.Unlock()
 
-	// m.Lock()
-	// id := c.Param("id")
 
-	// for _, s := range students {
-	// 	if s.ID == id {
-	// 		c.IndentedJSON(http.StatusOK, s)
-	// 		return
-	// 	}
-	// }
-	// c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
-	// m.Unlock()
 }
 
 // Overwrite a Student's grade in a specified course
@@ -250,8 +202,8 @@ func postGradeToStudentbyID(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "cannot convert to JSON"})
 		return
 	}
-	for _, s := range students {
-		if s.ID == student_to_add.ID {
+	for _, s := range studentsEncrypted {
+		if s.ID == EncryptString(student_to_add.ID) {
 			for course, grade := range student_to_add.Courses {
 				for _, c := range courses {
 					if c == course {
@@ -266,14 +218,41 @@ func postGradeToStudentbyID(c *gin.Context) {
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
 	m.Unlock()
 }
+func sendToFile(){
 
+    f, err:= os.Create("data.txt")
+	if err != nil {
+        panic(err)
+    }
+	w := bufio.NewWriter(f)
+	w.WriteString("Courses:\n")
+	for i := 0; i < len(coursesEncrypted); i++ {
+		 w.WriteString(coursesEncrypted[i]+"\n")
+
+	}
+	w.WriteString("Students:\n")
+	for i := 0; i < len(studentsEncrypted); i++ {
+		w.WriteString("id: "+studentsEncrypted[i].ID+"\n")
+		w.WriteString("name: "+studentsEncrypted[i].Name+"\n")
+		w.WriteString("year: "+studentsEncrypted[i].Year+"\n")
+	//	w.WriteString("courses: "studentsEncrypted[i].Courses+"\n")
+		w.WriteString(" \n")
+
+   }
+
+    w.Flush()
+}
+func sendToFileRequest(c *gin.Context){
+	sendToFile()
+	c.IndentedJSON(http.StatusOK, "ok")
+}
 // Get a Student's grade in a specified course
 func getStudentsGradeById(c *gin.Context) {
 	m.Lock()
 	id := c.Param("id")
 	course := c.Param("course")
 
-	for _, s := range students {
+	for _, s := range studentsEncrypted {
 		if s.ID == id {
 			for name, grade := range s.Courses {
 				if name == course {
@@ -287,9 +266,11 @@ func getStudentsGradeById(c *gin.Context) {
 	m.Unlock()
 }
 
+
 func main() {
 	router := gin.Default()
 	encryptData()
+	sendToFile()
 	router.GET("/students", getStudents)
 	router.POST("/students", postStudents)
 
@@ -300,6 +281,7 @@ func main() {
 
 	router.POST("/student", postGradeToStudentbyID)
 	router.GET("/student/:id/course/:course", getStudentsGradeById)
-
+	router.GET("/grades", sendToFileRequest)
 	router.Run("localhost:8080")
+	
 }
