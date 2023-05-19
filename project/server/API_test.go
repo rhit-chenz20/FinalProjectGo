@@ -15,6 +15,8 @@ import (
 
 func setupRouter() *gin.Engine {
 	router := gin.Default()
+	clearData()
+	encryptData()
 	return router
 }
 
@@ -66,7 +68,7 @@ func TestPostCourses(t *testing.T) {
 }
 
 func TestGetStudent(t *testing.T) {
-	mockResponse := `[{"ID":"1","Name":"JohnDoe","Year":"Junior","Courses":{}},{"ID":"2","Name":"JaneDoe","Year":"Sophomore","Courses":{}},{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{}}]`
+	mockResponse := `[{"ID":"1","Name":"JohnDoe","Year":"Junior","Courses":{"CSSE403":100}},{"ID":"2","Name":"JaneDoe","Year":"Sophomore","Courses":{}},{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{}}]`
 	router := setupRouter()
 	router.GET("/students", getStudents)
 
@@ -99,7 +101,7 @@ func TestPostStudent(t *testing.T) {
 	assert.Equal(t, mockResponse, response)
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	mockResponse = `[{"ID":"1","Name":"JohnDoe","Year":"Junior","Courses":{}},{"ID":"2","Name":"JaneDoe","Year":"Sophomore","Courses":{}},{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{}},{"ID":"4","Name":"Joey","Year":"Freshman","Courses":{}}]`
+	mockResponse = `[{"ID":"1","Name":"JohnDoe","Year":"Junior","Courses":{"CSSE403":100}},{"ID":"2","Name":"JaneDoe","Year":"Sophomore","Courses":{}},{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{}},{"ID":"4","Name":"Joey","Year":"Freshman","Courses":{}}]`
 
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/students", nil)
@@ -112,42 +114,25 @@ func TestPostStudent(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-// func TestPostGradeByID(t *testing.T) {
-// 	mockResponse := `{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{"CSSE403":40}}`
-// 	router := setupRouter()
-// 	router.POST("/student", postGradeToStudentbyID)
+func TestPostGradeByID(t *testing.T) {
+	mockResponse := `{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{"CSSE403":40}}`
+	router := setupRouter()
+	router.POST("/student", postGradeToStudentbyID)
+	grades := make(map[string]float64)
+	grades["CSSE403"] = 40
+	student := student{ID: "3"}
+	student.Courses = grades
+	val, _ := json.Marshal(student)
+	req, _ := http.NewRequest("POST", "/student", bytes.NewBuffer(val))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	responseData, _ := ioutil.ReadAll(w.Body)
+	response := strings.ReplaceAll(string(responseData), " ", "")
+	response = strings.ReplaceAll(response, "\n", "")
 
-// 	srv := &http.Server{
-// 		Addr:    ":8080",
-// 		Handler: router,
-// 	}
-
-// 	grades := make(map[string]float64)
-// 	grades["CSSE403"] = 40
-// 	student := student{ID: "3"}
-// 	student.Courses = grades
-// 	val, _ := json.Marshal(student)
-// 	req, _ := http.NewRequest("POST", "/student", bytes.NewBuffer(val))
-// 	w := httptest.NewRecorder()
-// 	router.ServeHTTP(w, req)
-// 	responseData, _ := ioutil.ReadAll(w.Body)
-// 	response := strings.ReplaceAll(string(responseData), " ", "")
-// 	response = strings.ReplaceAll(response, "\n", "")
-
-// 	assert.Equal(t, mockResponse, response)
-// 	assert.Equal(t, http.StatusCreated, w.Code)
-// 	log.Println("Shutting down server...")
-
-// 	// The context is used to inform the server it has 5 seconds to finish
-// 	// the request it is currently handling
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-// 	if err := srv.Shutdown(ctx); err != nil {
-// 		log.Fatal("Server forced to shutdown: ", err)
-// 	}
-
-// 	log.Println("Server exiting")
-// }
+	assert.Equal(t, mockResponse, response)
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
 
 func TestGetStudentByID(t *testing.T) {
 	mockResponse := `{"ID":"3","Name":"DaveSmith","Year":"Senior","Courses":{}}`
@@ -165,21 +150,21 @@ func TestGetStudentByID(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-// func TestGetStudentGradeByID(t *testing.T) {
-// 	mockResponse := `40`
+func TestGetStudentGradeByID(t *testing.T) {
+	mockResponse := `40`
 
-// 	students[2].Courses["CSSE403"] = 40
+	students[2].Courses["CSSE403"] = 40
 
-// 	router := setupRouter()
-// 	router.GET("/student/:id/course/:course", getStudentsGradeById)
+	router := setupRouter()
+	router.GET("/student/:id/course/:course", getStudentsGradeById)
 
-// 	w := httptest.NewRecorder()
-// 	req, _ := http.NewRequest("GET", "/student/3/course/CSSE403", nil)
-// 	router.ServeHTTP(w, req)
-// 	responseData, _ := ioutil.ReadAll(w.Body)
-// 	response := strings.ReplaceAll(string(responseData), " ", "")
-// 	response = strings.ReplaceAll(response, "\n", "")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/student/3/course/CSSE403", nil)
+	router.ServeHTTP(w, req)
+	responseData, _ := ioutil.ReadAll(w.Body)
+	response := strings.ReplaceAll(string(responseData), " ", "")
+	response = strings.ReplaceAll(response, "\n", "")
 
-// 	assert.Equal(t, mockResponse, response)
-// 	assert.Equal(t, http.StatusOK, w.Code)
-// }
+	assert.Equal(t, mockResponse, response)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
