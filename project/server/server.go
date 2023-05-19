@@ -87,7 +87,7 @@ var courses = []string{
 
 // starter data for students
 var students = []student{
-	{ID: "1", Name: "John Doe", Year: "Junior", Courses: make(map[string]float64)},
+	{ID: "1", Name: "John Doe", Year: "Junior", Courses: map[string]float64{"CSSE403":100}},
 	{ID: "2", Name: "Jane Doe", Year: "Sophomore", Courses: make(map[string]float64)},
 	{ID: "3", Name: "Dave Smith", Year: "Senior", Courses: make(map[string]float64)},
 }
@@ -109,8 +109,10 @@ var id_counter = 4
 		id:=EncryptString(students[i].ID)
 		name:=EncryptString(students[i].Name)
 		year:=EncryptString(students[i].Year)
-		courses:=students[i].Courses
-		
+		courses:=make(map[string]float64)
+		for name, grade := range students[i].Courses {
+			courses[EncryptString(name)] = grade;
+		}
 		
 		var student = student{ID: id, Name: name, Year: year, Courses: courses}
 		studentsEncrypted = append(studentsEncrypted, student)
@@ -119,17 +121,17 @@ var id_counter = 4
  }
 
 func getCourses(c *gin.Context) {
-	m.Lock()
+	//m.Lock()
 	tempcourses:= []string{}
 	for i := 0; i < len(coursesEncrypted); i++ { 		
 		tempcourses= append(tempcourses,DecryptString(coursesEncrypted[i])) 
  	}
 	c.IndentedJSON(http.StatusOK, tempcourses)
-	m.Unlock()
+	//m.Unlock()
 }
 
 func postCourses(c *gin.Context) {
-	m.Lock()
+	//m.Lock()
 	var newCourse string
 	err := c.BindJSON(&newCourse)
 	if err != nil {
@@ -137,29 +139,32 @@ func postCourses(c *gin.Context) {
 	}
 	coursesEncrypted = append(coursesEncrypted, EncryptString(newCourse))
 	c.IndentedJSON(http.StatusCreated,  newCourse)
-	m.Unlock()
+	//m.Unlock()
 }
 
 func getStudents(c *gin.Context) {
-	m.Lock()
+	//m.Lock()
 	tempstudent:= []student{}
 	for i := 0; i < len(studentsEncrypted); i++ {
 		id:=DecryptString(studentsEncrypted[i].ID)
 		name:=DecryptString(studentsEncrypted[i].Name)
 		year:=DecryptString(studentsEncrypted[i].Year)
-		courses:=studentsEncrypted[i].Courses
-		
+		//courses:=studentsEncrypted[i].Courses
+		courses:=make(map[string]float64)
+		for name, grade := range studentsEncrypted[i].Courses {
+			courses[DecryptString(name)] = grade;
+		}
 		
 		var student = student{ID: id, Name: name, Year: year, Courses: courses}
 		tempstudent = append(tempstudent, student)
  	}	
 
 	c.IndentedJSON(http.StatusOK, tempstudent)
-	m.Unlock()
+	//m.Unlock()
 }
 
 func postStudents(c *gin.Context) {
-	m.Lock()
+	//m.Lock()
 	var newStudent student
 
 	// Call BindJSON to bind the received JSON to
@@ -167,47 +172,70 @@ func postStudents(c *gin.Context) {
 	if err := c.BindJSON(&newStudent); err != nil {
 		return
 	}
-	newStudent.ID = EncryptString(strconv.Itoa(id_counter))
+	fmt.Println("NEW STUDENT: ",newStudent )
+	newStudent.ID = EncryptString( strconv.Itoa(id_counter))
+	if newStudent.Name != "" {
+	newStudent.Name = EncryptString( newStudent.Name)
+	}
+	if newStudent.Year !=""{
+		newStudent.Year= EncryptString( newStudent.Year)
+	}
 	if newStudent.Courses == nil {
 		newStudent.Courses = make(map[string]float64)
+	} else
+	{
+		encryptCourse:=make(map[string]float64)
+		for name, grade := range newStudent.Courses {
+			encryptCourse[EncryptString(name)] = grade;
+		}
+		newStudent.Courses = encryptCourse;
 	}
 	id_counter += 1
 	// Add the new student to the slice.
 	studentsEncrypted = append(studentsEncrypted, newStudent)
 	c.IndentedJSON(http.StatusCreated, newStudent)
-	m.Unlock()
+	//m.Unlock()
 }
 
 func getStudentByID(c *gin.Context) {
-	m.Lock()
-	id := EncryptString(c.Param("id"))
-
+	//m.Lock()
+	id := (c.Param("id"))
 	for _, s := range studentsEncrypted {
-		if s.ID == id {
-			c.IndentedJSON(http.StatusOK, s)
+		fmt.Println("encrypted ID: ", s.ID)
+		if DecryptString(s.ID )== id {
+			id:=DecryptString(s.ID)
+			name:=DecryptString(s.Name)
+			year:=DecryptString(s.Year)
+			courses:=make(map[string]float64)
+			for name, grade := range s.Courses {
+				courses[DecryptString(name)] = grade;
+			}
+			var student = student{ID: id, Name: name, Year: year, Courses: courses}
+			c.IndentedJSON(http.StatusOK, student)
 			return
 		}
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
-	m.Unlock()
+	//m.Unlock()
 
 
 }
 
 // Overwrite a Student's grade in a specified course
 func postGradeToStudentbyID(c *gin.Context) {
-	m.Lock()
+	//m.Lock()
 	var student_to_add student
 	if err := c.BindJSON(&student_to_add); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "cannot convert to JSON"})
 		return
 	}
 	for _, s := range studentsEncrypted {
-		if s.ID == EncryptString(student_to_add.ID) {
+		if DecryptString(s.ID) == student_to_add.ID {
 			for course, grade := range student_to_add.Courses {
-				for _, c := range courses {
-					if c == course {
-						s.Courses[course] = grade
+				for _, c := range coursesEncrypted {
+					if DecryptString(c) == course {
+						fmt.Println("UPDATING COURSE"+ course)
+						s.Courses[c] = grade
 					}
 				}
 			}
@@ -216,7 +244,7 @@ func postGradeToStudentbyID(c *gin.Context) {
 		}
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student not found"})
-	m.Unlock()
+	//m.Unlock()
 }
 func sendToFile(){
 
@@ -235,6 +263,10 @@ func sendToFile(){
 		w.WriteString("id: "+studentsEncrypted[i].ID+"\n")
 		w.WriteString("name: "+studentsEncrypted[i].Name+"\n")
 		w.WriteString("year: "+studentsEncrypted[i].Year+"\n")
+		for name, grade := range studentsEncrypted[i].Courses {
+			s := fmt.Sprintf("%f", grade) 
+			w.WriteString("Grade for "+name+ ": "+s+" \n")
+		}
 	//	w.WriteString("courses: "studentsEncrypted[i].Courses+"\n")
 		w.WriteString(" \n")
 
@@ -248,14 +280,15 @@ func sendToFileRequest(c *gin.Context){
 }
 // Get a Student's grade in a specified course
 func getStudentsGradeById(c *gin.Context) {
-	m.Lock()
+	//m.Lock()
 	id := c.Param("id")
 	course := c.Param("course")
 
 	for _, s := range studentsEncrypted {
-		if s.ID == id {
+		if DecryptString(s.ID) == id {
+			fmt.Println("Looking for course!!")
 			for name, grade := range s.Courses {
-				if name == course {
+				if DecryptString(name) == course {
 					c.IndentedJSON(http.StatusOK, grade)
 					return
 				}
@@ -263,7 +296,7 @@ func getStudentsGradeById(c *gin.Context) {
 		}
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "student/course not found"})
-	m.Unlock()
+	//m.Unlock()
 }
 
 
